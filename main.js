@@ -1,50 +1,136 @@
-(function(){
-  const $=(s,r=document)=>r.querySelector(s);
-  const $$=(s,r=document)=>[...r.querySelectorAll(s)];
-  const modal=$('#qualifyModal'), backdrop=$('#qualifyBackdrop'), close=$('#qualifyClose');
-  const form=$('#qualificationForm'), steps=$$('.qualify-step');
-  const bar=$('#progressBar'), counter=$('#stepCounter'), progressText=$('#progressText');
-  const result=$('#qualifyResult'), title=$('#resultTitle'), body=$('#resultBody');
-  const bookingBtn=$('#bookingButton'), webinarBtn=$('#webinarButton'), altForm=$('#alternativeForm');
-  const altSubmit=$('#altSubmit'), altStatus=$('#altStatus');
-  let current=0; const answers={};
-  const progress=[0,38,58,78,92,100];
-  const comp={q1:new Set(['80k-plus']),q2:new Set(['build','invest']),q3:new Set(['2029','2030-plus']),q4:new Set(['30-days','1-3-months']),q5:new Set(['call','webinar'])};
-  function setProgress(v){ bar.style.width=progress[Math.min(v,5)]+'%'; counter.textContent=v<5?`Pregunta ${v+1} de 5`:'Evaluación completada'; progressText.textContent=v===0?'Empieza la evaluación':`${progress[Math.min(v,5)]}% de avance`; }
-  function open(){ modal.classList.add('open'); modal.setAttribute('aria-hidden','false'); document.body.style.overflow='hidden'; reset(); }
-  function shut(){ modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); document.body.style.overflow=''; }
-  function reset(){ current=0; Object.keys(answers).forEach(k=>delete answers[k]); form.hidden=false; result.hidden=true; altForm.hidden=true; result.querySelector('.result-actions').style.display='flex'; steps.forEach((s,i)=>s.classList.toggle('active',i===0)); form.reset(); setProgress(0); }
-  $$('.js-qualify').forEach(b=>b.addEventListener('click',open)); close.addEventListener('click',shut); backdrop.addEventListener('click',shut);
-  document.addEventListener('keydown',e=>{if(e.key==='Escape')shut()});
-  steps.forEach((step,i)=>{$$('input',step).forEach(inp=>inp.addEventListener('change',()=>{if(i===0){bar.style.width='38%';progressText.textContent='38% de avance';}}))});
-  form.addEventListener('submit',e=>{e.preventDefault(); const input=$(`.qualify-step.active input:checked`); if(!input) return; answers['q'+(current+1)]=input.value; if(current<4){current++; steps.forEach((s,i)=>s.classList.toggle('active',i===current)); setProgress(current);} else {showResult();}});
-  $$('[data-back]').forEach(b=>b.addEventListener('click',()=>{if(current>0){current--;steps.forEach((s,i)=>s.classList.toggle('active',i===current));setProgress(current);}}));
-  function showResult(){
-    const score=Object.entries(comp).filter(([q,set])=>set.has(answers[q])).length;
-    const qualified=score>=2;
-    form.hidden=true; result.hidden=false; altForm.hidden=!(!qualified);
-    setProgress(5);
-    const booking=(window.COSTELLA_CONFIG&&window.COSTELLA_CONFIG.bookingUrl)||'';
-    const webinar=(window.COSTELLA_CONFIG&&window.COSTELLA_CONFIG.webinarUrl)||'';
-    if(qualified){
-      title.textContent='Tu perfil es compatible con Costella.';
-      body.innerHTML='Tus respuestas encajan con los criterios iniciales de este proyecto. El siguiente paso es conocer las condiciones vigentes y resolver tus preguntas con un asesor.';
-      bookingBtn.hidden=!booking; bookingBtn.href=booking||'#';
-      webinarBtn.hidden=!webinar; webinarBtn.href=webinar||'#';
-      altForm.hidden=true;
-    }else{
-      title.textContent='Hoy quizá estés buscando algo diferente.';
-      body.innerHTML='No pasa nada. Cuéntanos qué estás buscando y con cuánto quieres invertir para poder darte seguimiento con una alternativa que se ajuste mejor.';
-      bookingBtn.hidden=true; webinarBtn.hidden=true; altForm.hidden=false;
-    }
-  }
-  altSubmit.addEventListener('click',async()=>{
-    const data={name:$('#altName').value.trim(),whatsapp:$('#altWhatsApp').value.trim(),email:$('#altEmail').value.trim(),search:$('#altSearch').value.trim(),budget:$('#altBudget').value,answers,qualification:'alternative'};
-    if(!data.name||!data.whatsapp){altStatus.textContent='Completa al menos tu nombre y WhatsApp.';return;}
-    const endpoint=(window.COSTELLA_CONFIG&&window.COSTELLA_CONFIG.leadEndpoint)||'';
-    if(endpoint){try{await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...data,timestamp:new Date().toISOString()})})}catch(e){}}
-    try{localStorage.setItem('costella_alt_lead',JSON.stringify({...data,timestamp:new Date().toISOString()}))}catch(e){}
-    altStatus.textContent='Gracias. Registramos tu interés y te contactaremos con una alternativa.';
-    altSubmit.disabled=true;
+(() => {
+  const $ = (s, r=document) => r.querySelector(s);
+  const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+  const cfg = window.COSTELLA_CONFIG || {};
+
+  // Scroll reveal
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('is-visible'); });
+  }, {threshold:.12});
+  $$('.reveal').forEach(el => observer.observe(el));
+
+  // Mobile menu
+  const toggle = $('.menu-toggle');
+  const nav = $('.nav-links');
+  toggle?.addEventListener('click', () => {
+    const open = toggle.getAttribute('aria-expanded') === 'true';
+    toggle.setAttribute('aria-expanded', String(!open));
+    nav?.classList.toggle('mobile-open', !open);
   });
+  nav?.addEventListener('click', e => { if (e.target.closest('a')) { nav.classList.remove('mobile-open'); toggle?.setAttribute('aria-expanded','false'); } });
+
+  // Modal + qualification
+  const modal = $('#qualifyModal');
+  const closeEls = $$('[data-close]');
+  const steps = $$('.q-step');
+  const nextBtn = $('#nextBtn');
+  const backBtn = $('#backBtn');
+  const progressBar = $('#progressBar');
+  const progressText = $('#progressText');
+  const stepText = $('#stepText');
+  const form = $('#qualificationForm');
+  const status = $('#formStatus');
+  const resultPanel = $('#resultPanel');
+  const bookingBtn = $('#bookingBtn');
+  const webinarBtn = $('#webinarBtn');
+  const altForm = $('#altForm');
+  const alternativeForm = $('#alternativeForm');
+  const altStatus = $('#altStatus');
+
+  let step = 1;
+  const answers = {};
+  const progressValues = [0,38,58,78,92,100];
+  const compatible = {
+    q1: new Set(['80k-plus']),
+    q2: new Set(['build','invest']),
+    q3: new Set(['2029','2030-plus']),
+    q4: new Set(['30-days','1-3-months']),
+    q5: new Set(['call','webinar'])
+  };
+
+  function updateProgress() {
+    progressBar.style.width = `${progressValues[step] || 0}%`;
+    progressText.textContent = step === 5 ? 'Última pregunta' : `${progressValues[step] || 0}% de avance`;
+    stepText.textContent = `Pregunta ${step} de 5`;
+    backBtn.style.visibility = step === 1 ? 'hidden' : 'visible';
+  }
+  function reset() {
+    step = 1;
+    Object.keys(answers).forEach(k => delete answers[k]);
+    form.reset();
+    form.hidden = false;
+    resultPanel.hidden = true;
+    altForm.hidden = true;
+    bookingBtn.hidden = true;
+    webinarBtn.hidden = true;
+    status.textContent = '';
+    status.hidden = false;
+    steps.forEach(s => s.classList.toggle('active', Number(s.dataset.step) === 1));
+    nextBtn.textContent = 'Continuar →';
+    updateProgress();
+  }
+  function open() {
+    reset();
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function close() {
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden','true');
+    document.body.style.overflow = '';
+  }
+  $$('.js-qualify').forEach(b => b.addEventListener('click', open));
+  closeEls.forEach(el => el.addEventListener('click', close));
+  document.addEventListener('keydown', e => { if(e.key==='Escape' && modal.classList.contains('open')) close(); });
+
+  function go(to) {
+    steps.forEach(s => s.classList.toggle('active', Number(s.dataset.step) === to));
+    step = to; updateProgress();
+    nextBtn.innerHTML = step === 5 ? 'Ver mi resultado <span>→</span>' : 'Continuar <span>→</span>';
+  }
+  function chosen(name){ return form.querySelector(`input[name="${name}"]:checked`)?.value || ''; }
+  function submitLead(extra={}) {
+    const payload = {source:'costella-v18',timestamp:new Date().toISOString(),answers,...extra};
+    try{sessionStorage.setItem('costella_last_lead',JSON.stringify(payload));}catch{}
+    if (!cfg.leadEndpoint) return Promise.resolve();
+    return fetch(cfg.leadEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),keepalive:true}).catch(()=>{});
+  }
+  function showResult(){
+    const compatibleCount = Object.keys(compatible).reduce((n,k)=>n+(compatible[k].has(answers[k])?1:0),0);
+    const qualified = compatibleCount >= 2;
+    const priority = qualified && compatible.q1.has(answers.q1) && compatible.q4.has(answers.q4);
+    form.hidden = true;
+    steps.forEach(s=>s.classList.remove('active'));
+    resultPanel.hidden = false;
+    progressBar.style.width='100%'; progressText.textContent='Evaluación completada'; stepText.textContent='Resultado';
+    const title = $('#resultTitle'); const body = $('#resultBody'); const urgency = $('#resultUrgency');
+    bookingBtn.hidden = true; webinarBtn.hidden = true; altForm.hidden = true;
+    if (qualified) {
+      title.textContent = priority ? 'Tu perfil encaja con Costella y estás en un buen momento para avanzar.' : 'Tu perfil es compatible con Costella Telchac.';
+      body.innerHTML = '<strong>Por tus respuestas, vale la pena conocer el proyecto a profundidad.</strong><br>El siguiente paso es revisar disponibilidad, condiciones vigentes y resolver tus preguntas con un asesor.';
+      if(cfg.bookingUrl){bookingBtn.href=cfg.bookingUrl; bookingBtn.hidden=false;}
+      if(cfg.webinarUrl){webinarBtn.href=cfg.webinarUrl; webinarBtn.hidden=false;}
+      if(cfg.showWebinarScarcity && cfg.webinarSlots){urgency.hidden=false; urgency.textContent=`Cupo confirmado: quedan ${cfg.webinarSlots} lugares para el próximo webinar.`;} else urgency.hidden=true;
+    } else {
+      title.textContent = 'Hoy quizá estés buscando algo diferente a Costella.';
+      body.innerHTML = 'No pasa nada. Cuéntanos qué estás buscando y con qué presupuesto quieres invertir. Así podremos avisarte cuando exista un proyecto que encaje mejor contigo.';
+      altForm.hidden=false; urgency.hidden=true;
+    }
+    submitLead({qualification:qualified?'compatible':'alternative',compatibleCount,priority});
+  }
+  nextBtn.addEventListener('click', () => {
+    const val = chosen(`q${step}`);
+    if(!val){status.textContent='Selecciona una opción para continuar.';return;}
+    status.textContent=''; answers[`q${step}`]=val;
+    if(step<5) go(step+1); else showResult();
+  });
+  backBtn.addEventListener('click', () => { if(step>1) go(step-1); });
+  alternativeForm?.addEventListener('submit', e => {
+    e.preventDefault();
+    const fd=new FormData(alternativeForm);
+    submitLead({qualification:'alternative',contact:{name:fd.get('name'),whatsapp:fd.get('whatsapp'),email:fd.get('email')},budget:fd.get('budget'),interest:fd.get('interest')});
+    altStatus.textContent='Listo. Guardamos tus datos y te avisaremos cuando encontremos un proyecto que encaje mejor contigo.';
+  });
+  updateProgress();
 })();

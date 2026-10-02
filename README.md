@@ -1,27 +1,18 @@
-# Costella Telchac Residencial
+# Costella Telchac Residencial · V18
 
-Esta versión está deliberadamente aplanada para evitar problemas al subir archivos desde el navegador de GitHub.
+Long-form de conversión inspirada en la estructura de la landing histórica de Costella y en la dirección editorial aprobada, adaptada al Brandbook actual.
 
-Todos los archivos públicos están en la raíz:
-
-- index.html
-- admin.html
-- style.css
-- main.js
-- config.js
-- imágenes WebP/PNG
-
-## Cloudflare
-
-- Root directory: /
-- Build command: vacío
-- Deploy command: npx wrangler deploy
-- Preview command: vacío o npx wrangler preview
-
-No requiere Worker script ni API secrets.
+## Publicación
+- Root: /
+- Build: vacío
+- Deploy: `npx wrangler deploy`
+- Static Assets: raíz del proyecto
 
 ## Configuración
+`admin.html` permite preparar booking, webinar y lead endpoint y descargar `config.js`.
 
-Edita `config.js` para booking, webinar, leads y Meta Pixel.
+## CTA
+Todos los CTA principales abren el cuestionario de 5 preguntas. El resultado clasifica el perfil como compatible o alternativo mediante combinación de respuestas.
 
-Importante: esta versión sacrifica carpetas internas de assets para maximizar compatibilidad con la carga web de GitHub. La experiencia visual y las animaciones siguen siendo HTML/CSS/JS.
+## Video
+https://youtu.be/GN3wHvDtAbM

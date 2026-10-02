@@ -1,9 +1,8 @@
-const COSTELLA_CONFIG = {
+window.COSTELLA_CONFIG = {
   bookingUrl: '',
   webinarUrl: '',
   leadEndpoint: '',
-  metaPixelId: '',
   webinarSlots: 10,
   showWebinarScarcity: false,
-  qualificationReferenceDownPayment: 80000
+  metaPixelId: ''
 };
