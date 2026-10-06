@@ -14,3 +14,12 @@ window.COSTELLA_CONFIG = {
   metaPixelId: ''
 };
 ```
+
+
+## CRM / Google Sheets
+
+See `google-apps-script/LEAD_MAPPING.md` and `google-apps-script/Costella_Leads_AppsScript.gs`.
+
+
+## Booking CTA
+Todos los accesos al Calendly compatible usan el texto: "Agenda una videollamada".
