@@ -61,6 +61,7 @@
     resultPanel.hidden = true;
     altForm.hidden = true;
     bookingBtn.hidden = true;
+    bookingBtn.style.display = 'none';
     status.textContent = '';
     status.hidden = false;
     steps.forEach(s => s.classList.toggle('active', Number(s.dataset.step) === 1));
@@ -135,12 +136,13 @@
     resultPanel.hidden = false;
     progressBar.style.width='100%'; progressText.textContent='Evaluación completada'; stepText.textContent='Resultado';
     const title = $('#resultTitle'); const body = $('#resultBody');
-    bookingBtn.hidden = true; altForm.hidden = true;
+    bookingBtn.hidden = true; bookingBtn.style.display = 'none'; altForm.hidden = true;
     if (qualified) {
       title.textContent = priority ? 'Tu perfil encaja con Costella y estás en un buen momento para avanzar.' : 'Tu perfil es compatible con Costella Telchac.';
       body.innerHTML = '<strong>Por tus respuestas, vale la pena conocer el proyecto a profundidad.</strong><br>El siguiente paso es revisar disponibilidad, condiciones vigentes y resolver tus preguntas directamente con un asesor.';
       bookingBtn.href = cfg.bookingUrl || 'https://calendly.com/somosamco/30min';
       bookingBtn.hidden = false;
+      bookingBtn.style.display = 'inline-flex';
       await submitLead({
         qualification: 'compatible',
         compatibleCount,
