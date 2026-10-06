@@ -21,5 +21,5 @@ window.COSTELLA_CONFIG = {
 See `google-apps-script/LEAD_MAPPING.md` and `google-apps-script/Costella_Leads_AppsScript.gs`.
 
 
-## Booking CTA
-Todos los accesos al Calendly compatible usan el texto: "Agenda una videollamada".
+## Cambio V22
+Todos los CTA principales de la landing muestran **AGENDA TU CITA**. El botón de reserva del resultado compatible también usa **AGENDA TU CITA** y conserva el enlace de Calendly configurado.
