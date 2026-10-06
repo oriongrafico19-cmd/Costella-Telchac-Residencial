@@ -32,7 +32,6 @@
   const status = $('#formStatus');
   const resultPanel = $('#resultPanel');
   const bookingBtn = $('#bookingBtn');
-  const webinarBtn = $('#webinarBtn');
   const altForm = $('#altForm');
   const alternativeForm = $('#alternativeForm');
   const altStatus = $('#altStatus');
@@ -45,7 +44,7 @@
     q2: new Set(['build','invest']),
     q3: new Set(['2029','2030-plus']),
     q4: new Set(['30-days','1-3-months']),
-    q5: new Set(['call','webinar'])
+    q5: new Set(['call','conditions'])
   };
 
   function updateProgress() {
@@ -62,7 +61,6 @@
     resultPanel.hidden = true;
     altForm.hidden = true;
     bookingBtn.hidden = true;
-    webinarBtn.hidden = true;
     status.textContent = '';
     status.hidden = false;
     steps.forEach(s => s.classList.toggle('active', Number(s.dataset.step) === 1));
@@ -104,18 +102,17 @@
     steps.forEach(s=>s.classList.remove('active'));
     resultPanel.hidden = false;
     progressBar.style.width='100%'; progressText.textContent='Evaluación completada'; stepText.textContent='Resultado';
-    const title = $('#resultTitle'); const body = $('#resultBody'); const urgency = $('#resultUrgency');
-    bookingBtn.hidden = true; webinarBtn.hidden = true; altForm.hidden = true;
+    const title = $('#resultTitle'); const body = $('#resultBody');
+    bookingBtn.hidden = true; altForm.hidden = true;
     if (qualified) {
       title.textContent = priority ? 'Tu perfil encaja con Costella y estás en un buen momento para avanzar.' : 'Tu perfil es compatible con Costella Telchac.';
-      body.innerHTML = '<strong>Por tus respuestas, vale la pena conocer el proyecto a profundidad.</strong><br>El siguiente paso es revisar disponibilidad, condiciones vigentes y resolver tus preguntas con un asesor.';
-      if(cfg.bookingUrl){bookingBtn.href=cfg.bookingUrl; bookingBtn.hidden=false;}
-      if(cfg.webinarUrl){webinarBtn.href=cfg.webinarUrl; webinarBtn.hidden=false;}
-      if(cfg.showWebinarScarcity && cfg.webinarSlots){urgency.hidden=false; urgency.textContent=`Cupo confirmado: quedan ${cfg.webinarSlots} lugares para el próximo webinar.`;} else urgency.hidden=true;
+      body.innerHTML = '<strong>Por tus respuestas, vale la pena conocer el proyecto a profundidad.</strong><br>El siguiente paso es revisar disponibilidad, condiciones vigentes y resolver tus preguntas directamente con un asesor.';
+      bookingBtn.href = cfg.bookingUrl || 'https://calendly.com/somosamco/30min';
+      bookingBtn.hidden = false;
     } else {
       title.textContent = 'Hoy quizá estés buscando algo diferente a Costella.';
       body.innerHTML = 'No pasa nada. Cuéntanos qué estás buscando y con qué presupuesto quieres invertir. Así podremos avisarte cuando exista un proyecto que encaje mejor contigo.';
-      altForm.hidden=false; urgency.hidden=true;
+      altForm.hidden = false;
     }
     submitLead({qualification:qualified?'compatible':'alternative',compatibleCount,priority});
   }

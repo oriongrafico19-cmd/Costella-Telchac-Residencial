@@ -1,8 +1,5 @@
 window.COSTELLA_CONFIG = {
-  bookingUrl: '',
-  webinarUrl: '',
+  bookingUrl: 'https://calendly.com/somosamco/30min',
   leadEndpoint: '',
-  webinarSlots: 10,
-  showWebinarScarcity: false,
   metaPixelId: ''
 };
