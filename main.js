@@ -89,12 +89,12 @@
   }
   function chosen(name){ return form.querySelector(`input[name="${name}"]:checked`)?.value || ''; }
   function submitLead(extra={}) {
-    const payload = {source:'costella-v18',timestamp:new Date().toISOString(),answers,...extra};
+    const payload = {source:'costella-v20',timestamp:new Date().toISOString(),answers:{...answers},...extra};
     try{sessionStorage.setItem('costella_last_lead',JSON.stringify(payload));}catch{}
     if (!cfg.leadEndpoint) return Promise.resolve();
-    return fetch(cfg.leadEndpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload),keepalive:true}).catch(()=>{});
+    return fetch(cfg.leadEndpoint,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify(payload),keepalive:true}).catch(()=>{});
   }
-  function showResult(){
+  async function showResult(){
     const compatibleCount = Object.keys(compatible).reduce((n,k)=>n+(compatible[k].has(answers[k])?1:0),0);
     const qualified = compatibleCount >= 2;
     const priority = qualified && compatible.q1.has(answers.q1) && compatible.q4.has(answers.q4);
@@ -109,12 +109,12 @@
       body.innerHTML = '<strong>Por tus respuestas, vale la pena conocer el proyecto a profundidad.</strong><br>El siguiente paso es revisar disponibilidad, condiciones vigentes y resolver tus preguntas directamente con un asesor.';
       bookingBtn.href = cfg.bookingUrl || 'https://calendly.com/somosamco/30min';
       bookingBtn.hidden = false;
+      await submitLead({qualification:'compatible',compatibleCount,priority});
     } else {
       title.textContent = 'Hoy quizá estés buscando algo diferente a Costella.';
       body.innerHTML = 'No pasa nada. Cuéntanos qué estás buscando y con qué presupuesto quieres invertir. Así podremos avisarte cuando exista un proyecto que encaje mejor contigo.';
       altForm.hidden = false;
     }
-    submitLead({qualification:qualified?'compatible':'alternative',compatibleCount,priority});
   }
   nextBtn.addEventListener('click', () => {
     const val = chosen(`q${step}`);
@@ -123,10 +123,13 @@
     if(step<5) go(step+1); else showResult();
   });
   backBtn.addEventListener('click', () => { if(step>1) go(step-1); });
-  alternativeForm?.addEventListener('submit', e => {
+  alternativeForm?.addEventListener('submit', async e => {
     e.preventDefault();
     const fd=new FormData(alternativeForm);
-    submitLead({qualification:'alternative',contact:{name:fd.get('name'),whatsapp:fd.get('whatsapp'),email:fd.get('email')},budget:fd.get('budget'),interest:fd.get('interest')});
+    const btn = alternativeForm.querySelector('button[type=submit]');
+    if (btn) btn.disabled = true;
+    const compatibleCount = Object.keys(compatible).reduce((n,k)=>n+(compatible[k].has(answers[k])?1:0),0);
+    await submitLead({qualification:'alternative',compatibleCount,priority:false,contact:{name:String(fd.get('name')||'').trim(),whatsapp:String(fd.get('whatsapp')||'').trim(),email:String(fd.get('email')||'').trim()},budget:String(fd.get('budget')||'').trim(),interest:String(fd.get('interest')||'').trim()});
     altStatus.textContent='Listo. Guardamos tus datos y te avisaremos cuando encontremos un proyecto que encaje mejor contigo.';
   });
   updateProgress();

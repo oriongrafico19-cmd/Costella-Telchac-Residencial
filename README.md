@@ -1,18 +1,16 @@
-# Costella Telchac Residencial · V18
+# Costella Telchac Residencial · V20 Booking + Leads
 
-Long-form de conversión inspirada en la estructura de la landing histórica de Costella y en la dirección editorial aprobada, adaptada al Brandbook actual.
+- Compatible: 5 preguntas → único botón de Calendly.
+- Alternativo: 5 preguntas → solo formulario de datos; NO booking ni webinar.
 
-## Publicación
-- Root: /
-- Build: vacío
-- Deploy: `npx wrangler deploy`
-- Static Assets: raíz del proyecto
+`config.js` incluye `leadEndpoint`, pensado para una URL de Web App de Google Apps Script.
 
-## Configuración
-`admin.html` permite preparar el booking de Calendly y el lead endpoint opcional y descargar `config.js`.
+Payload enviado cuando hay endpoint: timestamp, source, qualification, compatibleCount, priority, answers y, para perfiles alternativos, contact/budget/interest.
 
-## CTA
-Todos los CTA principales abren el cuestionario de 5 preguntas. El resultado clasifica el perfil como compatible o alternativo mediante combinación de respuestas. Si es compatible, solo se muestra el botón de agenda; si no es compatible, solo se muestra el segundo formulario de datos.
-
-## Video
-https://youtu.be/GN3wHvDtAbM
+```js
+window.COSTELLA_CONFIG = {
+  bookingUrl: 'https://calendly.com/somosamco/30min',
+  leadEndpoint: '',
+  metaPixelId: ''
+};
+```
