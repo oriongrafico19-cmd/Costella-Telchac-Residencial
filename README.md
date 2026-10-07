@@ -1,31 +1,17 @@
-# Costella Telchac Residencial · V25 · Base propia
+# Costella Telchac Residencial · D1 + Dashboard de leads no calificados
 
-Esta versión NO utiliza Google Apps Script, Google Sheets ni el CRM de terceros.
+Esta versión NO usa Google Apps Script, Google Sheets ni CRM externo.
 
-## Arquitectura
-- Landing pública: `index.html`
-- Dashboard privado: `admin.html`
-- Backend: Cloudflare Worker (`worker.js`)
-- Base de datos: Cloudflare D1 (`schema.sql`)
-- Leads compatibles: se envían a Calendly.
-- Leads no calificados: se guardan directamente en D1 y aparecen en `/admin`.
+Arquitectura: landing → Cloudflare Worker → Cloudflare D1 → /admin.
 
-## Configuración inicial
-1. Instala Wrangler y autentícate en Cloudflare.
-2. Ejecuta:
-   `npx wrangler d1 create costella-leads`
-3. Copia el `database_id` que entrega Cloudflare a `wrangler.toml`.
-4. Crea las tablas:
-   `npx wrangler d1 execute costella-leads --remote --file=./schema.sql`
-5. Define la contraseña del dashboard como secreto:
-   `npx wrangler secret put ADMIN_PASSWORD`
-6. Publica:
-   `npx wrangler deploy`
+## Configuración
+1. En Cloudflare D1 crea/usa la base `costella-leads`.
+2. El `wrangler.toml` ya contiene el database_id proporcionado para esta base.
+3. Ejecuta una vez: `npx wrangler d1 execute costella-leads --remote --file=schema.sql`
+4. Despliega: `npx wrangler deploy`.
+5. El panel está en `/admin`.
 
-## Dashboard
-Abre `/admin`. El panel pide la contraseña del administrador y solo consulta registros con `qualification='alternative'`.
+La landing guarda únicamente los perfiles no calificados. Los perfiles compatibles van a Calendly y no se guardan en este dashboard.
 
-## Importante
-La contraseña NO está dentro de `admin.html` ni `config.js`. El navegador la envía por HTTPS en el header `X-Admin-Password` y el Worker la compara con el secreto de Cloudflare.
-
-La landing principal no depende del dashboard para funcionar. El único endpoint propio que usa es `/api/leads`.
+## Acceso al dashboard
+La versión incluye una clave de administrador de aplicación (`COSTELLA-ADMIN-2026`) para el MVP. Cámbiala en `wrangler.toml` antes de publicar. Para seguridad empresarial se recomienda proteger `/admin` posteriormente con Cloudflare Access.
