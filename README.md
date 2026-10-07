@@ -1,17 +1,32 @@
 # Costella Telchac Residencial · D1 + Dashboard de leads no calificados
 
-Esta versión NO usa Google Apps Script, Google Sheets ni CRM externo.
+Esta versión usa Cloudflare Workers + Workers Static Assets + D1. No usa Google Apps Script, Google Sheets ni CRM externo.
 
-Arquitectura: landing → Cloudflare Worker → Cloudflare D1 → /admin.
+## Estructura
+- `/` — landing pública.
+- `/admin` — dashboard de leads no calificados.
+- `/api/leads` — guarda únicamente registros con `qualification = alternative`.
+- `/api/admin/leads` — consulta únicamente leads no calificados y requiere `x-admin-key`.
+- `/api/admin/lead` — actualiza seguimiento y notas de leads no calificados.
 
-## Configuración
-1. En Cloudflare D1 crea/usa la base `costella-leads`.
-2. El `wrangler.toml` ya contiene el database_id proporcionado para esta base.
-3. Ejecuta una vez: `npx wrangler d1 execute costella-leads --remote --file=schema.sql`
-4. Despliega: `npx wrangler deploy`.
-5. El panel está en `/admin`.
+## D1
+Base: `costella-leads`
+Database ID: `94d71374-2590-4764-bec5-9f94f884f088`
 
-La landing guarda únicamente los perfiles no calificados. Los perfiles compatibles van a Calendly y no se guardan en este dashboard.
+Si la tabla aún no existe, ejecuta `schema.sql` una vez en la consola SQL de D1.
 
-## Acceso al dashboard
-La versión incluye una clave de administrador de aplicación (`COSTELLA-ADMIN-2026`) para el MVP. Cámbiala en `wrangler.toml` antes de publicar. Para seguridad empresarial se recomienda proteger `/admin` posteriormente con Cloudflare Access.
+## Deploy
+En Cloudflare Workers & Pages, usa:
+- Build command: vacío
+- Deploy command: `npx wrangler deploy`
+- Root directory: `/`
+
+El frontend está en `public/`; el Worker y la configuración quedan fuera de los assets públicos.
+
+## Dashboard
+Abre `/admin` y escribe la clave de administrador configurada en `wrangler.toml`.
+
+> Para producción, sustituye `ADMIN_KEY` por un Cloudflare Secret (`npx wrangler secret put ADMIN_KEY`) y elimina el valor de `[vars]` del repositorio público.
+
+## Booking
+Los leads compatibles se envían a la videollamada de Calendly configurada en `public/config.js`.

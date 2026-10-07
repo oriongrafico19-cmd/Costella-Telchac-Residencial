@@ -1,16 +1,17 @@
 name = "costella-telchac-residencial"
-compatibility_date = "2026-09-30"
-workers_dev = true
 main = "worker.js"
+compatibility_date = "2026-10-07"
+workers_dev = true
 
 [assets]
-directory = "."
+directory = "./public"
 binding = "ASSETS"
+html_handling = "drop-trailing-slash"
 
 [[d1_databases]]
 binding = "DB"
 database_name = "costella-leads"
-database_id = "00000000-00000006-000050fd-e4bfea5cbd11a1a92edac5d4413eba31"
+database_id = "94d71374-2590-4764-bec5-9f94f884f088"
 
 [vars]
 ADMIN_KEY = "COSTELLA-ADMIN-2026"
