@@ -61,7 +61,6 @@
     resultPanel.hidden = true;
     altForm.hidden = true;
     bookingBtn.hidden = true;
-    bookingBtn.style.display = 'none';
     status.textContent = '';
     status.hidden = false;
     steps.forEach(s => s.classList.toggle('active', Number(s.dataset.step) === 1));
@@ -136,13 +135,14 @@
     resultPanel.hidden = false;
     progressBar.style.width='100%'; progressText.textContent='Evaluación completada'; stepText.textContent='Resultado';
     const title = $('#resultTitle'); const body = $('#resultBody');
-    bookingBtn.hidden = true; bookingBtn.style.display = 'none'; altForm.hidden = true;
+    bookingBtn.hidden = true; altForm.hidden = true;
     if (qualified) {
       title.textContent = priority ? 'Tu perfil encaja con Costella y estás en un buen momento para avanzar.' : 'Tu perfil es compatible con Costella Telchac.';
       body.innerHTML = '<strong>Por tus respuestas, vale la pena conocer el proyecto a profundidad.</strong><br>El siguiente paso es revisar disponibilidad, condiciones vigentes y resolver tus preguntas directamente con un asesor.';
       bookingBtn.href = cfg.bookingUrl || 'https://calendly.com/somosamco/30min';
+      bookingBtn.textContent = 'Agendar videollamada ';
+      bookingBtn.insertAdjacentHTML('beforeend','<span>↗</span>');
       bookingBtn.hidden = false;
-      bookingBtn.style.display = 'inline-flex';
       await submitLead({
         qualification: 'compatible',
         compatibleCount,
@@ -152,6 +152,8 @@
         interest: ''
       });
     } else {
+      bookingBtn.hidden = true;
+      bookingBtn.removeAttribute('href');
       title.textContent = 'Hoy quizá estés buscando algo diferente a Costella.';
       body.innerHTML = 'No pasa nada. Cuéntanos qué estás buscando y con qué presupuesto quieres invertir. Así podremos avisarte cuando exista un proyecto que encaje mejor contigo.';
       altForm.hidden = false;

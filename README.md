@@ -21,5 +21,15 @@ window.COSTELLA_CONFIG = {
 See `google-apps-script/LEAD_MAPPING.md` and `google-apps-script/Costella_Leads_AppsScript.gs`.
 
 
-## Cambio V22
-Todos los CTA principales de la landing muestran **AGENDA TU CITA**. El botón de reserva del resultado compatible también usa **AGENDA TU CITA** y conserva el enlace de Calendly configurado.
+## V24 — Agendar videollamada + leads no compatibles
+
+- Todos los CTA principales de la landing usan **Agendar videollamada**.
+- Los perfiles compatibles muestran únicamente el botón **Agendar videollamada** y llevan a Calendly.
+- Los perfiles no compatibles no muestran ni conservan el botón de Calendly; únicamente muestran el formulario alternativo.
+- Los leads no compatibles se envían al `leadEndpoint` configurado en `config.js`.
+- Se incluye `google-apps-script/Costella_Leads_AppsScript.gs` y `google-apps-script/LEAD_MAPPING.md` para conectarlo a una base de Google Sheets/CRM.
+
+### Para activar la base
+1. Publica el Apps Script como Web App.
+2. Copia la URL `/exec` en `config.js` → `leadEndpoint`.
+3. No cambies la estructura del payload sin revisar el mapeo incluido.
