@@ -1,6 +1,16 @@
 name = "costella-telchac-residencial"
+main = "worker.js"
 compatibility_date = "2026-09-30"
 workers_dev = true
 
 [assets]
 directory = "."
+binding = "ASSETS"
+
+# Create the database with:
+# npx wrangler d1 create costella-leads
+# Then replace YOUR_D1_DATABASE_ID below with the returned database_id.
+[[d1_databases]]
+binding = "DB"
+database_name = "costella-leads"
+database_id = "YOUR_D1_DATABASE_ID"

@@ -108,22 +108,23 @@
     };
   }
 
-  function submitLead(extra = {}) {
+  async function submitLead(extra = {}) {
     const payload = buildLeadPayload(extra);
-
+    try { sessionStorage.setItem('costella_last_lead', JSON.stringify(payload)); } catch {}
+    const endpoint = `${cfg.apiBase || '/api'}/leads`;
     try {
-      sessionStorage.setItem('costella_last_lead', JSON.stringify(payload));
-    } catch {}
-
-    if (!cfg.leadEndpoint) return Promise.resolve();
-
-    return fetch(cfg.leadEndpoint, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
-      body: JSON.stringify(payload),
-      keepalive: true
-    }).catch(() => {});
+      const r = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        keepalive: true
+      });
+      if (!r.ok) throw new Error('No fue posible guardar el registro.');
+      return await r.json();
+    } catch (e) {
+      console.warn('Costella lead save failed', e);
+      return { ok:false };
+    }
   }
 
   async function showResult(){

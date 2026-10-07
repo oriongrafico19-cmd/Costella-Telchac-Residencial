@@ -1,15 +1,9 @@
 window.COSTELLA_CONFIG = {
-  // Qualified leads are sent to this Calendly booking.
+  // Calendly is only shown to leads whose profile is compatible.
   bookingUrl: 'https://calendly.com/somosamco/30min',
-
-  // Paste the Google Apps Script Web App URL here.
-  // Example: https://script.google.com/macros/s/XXXXXXXXXXXX/exec
-  leadEndpoint: '',
-
-  // Used by the Apps Script / CRM payload.
+  // The site stores leads directly in its Cloudflare Worker + D1 database.
+  apiBase: '/api',
   projectId: 'costella-telchac-residencial',
   source: 'costella_landing',
-  defaultStageId: 'nuevo',
-
   metaPixelId: ''
 };

@@ -1,35 +1,31 @@
-# Costella Telchac Residencial · V20 Booking + Leads
+# Costella Telchac Residencial · V25 · Base propia
 
-- Compatible: 5 preguntas → único botón de Calendly.
-- Alternativo: 5 preguntas → solo formulario de datos; NO booking ni webinar.
+Esta versión NO utiliza Google Apps Script, Google Sheets ni el CRM de terceros.
 
-`config.js` incluye `leadEndpoint`, pensado para una URL de Web App de Google Apps Script.
+## Arquitectura
+- Landing pública: `index.html`
+- Dashboard privado: `admin.html`
+- Backend: Cloudflare Worker (`worker.js`)
+- Base de datos: Cloudflare D1 (`schema.sql`)
+- Leads compatibles: se envían a Calendly.
+- Leads no calificados: se guardan directamente en D1 y aparecen en `/admin`.
 
-Payload enviado cuando hay endpoint: timestamp, source, qualification, compatibleCount, priority, answers y, para perfiles alternativos, contact/budget/interest.
+## Configuración inicial
+1. Instala Wrangler y autentícate en Cloudflare.
+2. Ejecuta:
+   `npx wrangler d1 create costella-leads`
+3. Copia el `database_id` que entrega Cloudflare a `wrangler.toml`.
+4. Crea las tablas:
+   `npx wrangler d1 execute costella-leads --remote --file=./schema.sql`
+5. Define la contraseña del dashboard como secreto:
+   `npx wrangler secret put ADMIN_PASSWORD`
+6. Publica:
+   `npx wrangler deploy`
 
-```js
-window.COSTELLA_CONFIG = {
-  bookingUrl: 'https://calendly.com/somosamco/30min',
-  leadEndpoint: '',
-  metaPixelId: ''
-};
-```
+## Dashboard
+Abre `/admin`. El panel pide la contraseña del administrador y solo consulta registros con `qualification='alternative'`.
 
+## Importante
+La contraseña NO está dentro de `admin.html` ni `config.js`. El navegador la envía por HTTPS en el header `X-Admin-Password` y el Worker la compara con el secreto de Cloudflare.
 
-## CRM / Google Sheets
-
-See `google-apps-script/LEAD_MAPPING.md` and `google-apps-script/Costella_Leads_AppsScript.gs`.
-
-
-## V24 — Agendar videollamada + leads no compatibles
-
-- Todos los CTA principales de la landing usan **Agendar videollamada**.
-- Los perfiles compatibles muestran únicamente el botón **Agendar videollamada** y llevan a Calendly.
-- Los perfiles no compatibles no muestran ni conservan el botón de Calendly; únicamente muestran el formulario alternativo.
-- Los leads no compatibles se envían al `leadEndpoint` configurado en `config.js`.
-- Se incluye `google-apps-script/Costella_Leads_AppsScript.gs` y `google-apps-script/LEAD_MAPPING.md` para conectarlo a una base de Google Sheets/CRM.
-
-### Para activar la base
-1. Publica el Apps Script como Web App.
-2. Copia la URL `/exec` en `config.js` → `leadEndpoint`.
-3. No cambies la estructura del payload sin revisar el mapeo incluido.
+La landing principal no depende del dashboard para funcionar. El único endpoint propio que usa es `/api/leads`.
