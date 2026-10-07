@@ -14,7 +14,7 @@ async function api(request, env) {
     const contact = body.contact || {};
     const ts = body.timestamp || now();
     try {
-      await env.DB.prepare(`INSERT INTO leads (external_id,created_at,updated_at,project_id,source,qualification,compatible_count,priority,name,phone,email,budget,interest,answers_json,notes,stage_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'','nuevo') ON CONFLICT(external_id) DO UPDATE SET updated_at=excluded.updated_at,name=excluded.name,phone=excluded.phone,email=excluded.email,budget=excluded.budget,interest=excluded.interest,answers_json=excluded.answers_json`).bind(
+      await env.DB.prepare(`INSERT INTO leads (external_id,created_at,updated_at,project_id,source,qualification,compatible_count,priority,name,phone,email,budget,interest,answers_json,notes,stage_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,'','nuevo') ON CONFLICT(external_id) DO UPDATE SET updated_at=excluded.updated_at,name=excluded.name,phone=excluded.phone,email=excluded.email,budget=excluded.budget,interest=excluded.interest,answers_json=excluded.answers_json`).bind(
         body.external_id || crypto.randomUUID(), ts, ts, body.project_id || 'costella-telchac-residencial', body.source || 'costella_landing', 'alternative', Number(body.compatibleCount||0), body.priority ? 1:0,
         contact.name || '', contact.whatsapp || '', contact.email || '', body.budget || '', body.interest || '', JSON.stringify(body.answers || {})
       ).run();
