@@ -157,12 +157,60 @@ function doPost(e) {
   }
 }
 
-function doGet() {
-  return json_({
-    ok: true,
-    service: 'costella-leads',
-    sheet: COSTELLA_SHEET_NAME
-  });
+function doGet(e) {
+  const params = (e && e.parameter) || {};
+
+  // Health check: /exec
+  if (params.action !== 'leads') {
+    return json_({
+      ok: true,
+      service: 'costella-leads',
+      sheet: COSTELLA_SHEET_NAME
+    });
+  }
+
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName(COSTELLA_SHEET_NAME);
+    if (!sheet) throw new Error(`No existe la hoja "${COSTELLA_SHEET_NAME}".`);
+
+    const values = sheet.getDataRange().getValues();
+    if (!values.length) return json_({ ok: true, leads: [] });
+
+    const headers = values[0].map(h => String(h).trim());
+    const requestedQualification = String(params.qualification || 'alternative').toLowerCase();
+    const leads = [];
+
+    for (let r = 1; r < values.length; r++) {
+      const row = values[r];
+      if (!row.some(v => String(v).trim() !== '')) continue;
+
+      const obj = {};
+      headers.forEach((h, i) => {
+        let value = row[i];
+        if (value instanceof Date) value = value.toISOString();
+        obj[h] = value;
+      });
+
+      let answers = {};
+      try { answers = JSON.parse(obj.answers_json || '{}'); } catch (_) {}
+      const qualification = String(answers.qualification || '').toLowerCase();
+
+      // The admin dashboard intentionally exposes ONLY non-qualified leads.
+      if (requestedQualification === 'alternative' && qualification !== 'alternative') continue;
+
+      obj.answers_json = obj.answers_json || '{}';
+      leads.push(obj);
+    }
+
+    leads.sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
+    return json_({ ok: true, qualification: 'alternative', count: leads.length, leads: leads });
+  } catch (err) {
+    return json_({
+      ok: false,
+      error: String(err && err.message ? err.message : err)
+    });
+  }
 }
 
 function json_(obj) {
