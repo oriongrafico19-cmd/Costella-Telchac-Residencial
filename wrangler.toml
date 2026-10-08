@@ -15,3 +15,4 @@ database_id = "94d71374-2590-4764-bec5-9f94f884f088"
 
 [vars]
 ADMIN_KEY = "COSTELLA-ADMIN-2026"
+COSTELLA_CRM_URL = "https://martan-crm.onrender.com/api/intake/costella"

@@ -30,3 +30,17 @@ Abre `/admin` y escribe la clave de administrador configurada en `wrangler.toml`
 
 ## Booking
 Los leads compatibles se envían a la videollamada de Calendly configurada en `public/config.js`.
+
+
+## Integración opcional con Alondra Inversiones CRM
+
+Los leads no calificados se guardan primero en D1. Si se configuran `COSTELLA_CRM_URL` y el secreto `COSTELLA_CRM_SECRET`, el Worker también los envía al CRM de Alondra Inversiones sin proyecto (`project_id` vacío).
+
+Configura el secreto en Cloudflare con:
+`npx wrangler secret put COSTELLA_CRM_SECRET`
+
+El mismo valor debe existir como variable de entorno `COSTELLA_INTAKE_SECRET` en Render. No lo guardes en GitHub.
+
+
+### Analítica de conversión
+La V31 registra de forma anónima en D1 los clics de CTA, inicios/cierres del formulario, respuestas, resultado de calificación y clics en "Agendar videollamada". El administrador muestra qué sección de la landing origina más clics de videollamada y las respuestas de quienes hicieron ese clic. No registra IP ni datos personales en la tabla de analítica. La métrica de videollamada representa el clic que abre Calendly, no una cita confirmada.

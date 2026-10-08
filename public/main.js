@@ -3,6 +3,31 @@
   const $$ = (s, r=document) => [...r.querySelectorAll(s)];
   const cfg = window.COSTELLA_CONFIG || {};
 
+  // Anonymous conversion analytics (no personal data is sent here).
+  function getSessionId(){
+    try { let id=localStorage.getItem('costella_analytics_session'); if(!id){id=(crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(36).slice(2));localStorage.setItem('costella_analytics_session',id);} return id; } catch { return 'session-'+Date.now()+'-'+Math.random().toString(36).slice(2); }
+  }
+  const analyticsSessionId = getSessionId();
+  let currentCta = {id:'unknown',label:'Desconocido',section:'—'};
+  function track(eventType, data={}){
+    const payload={event_type:eventType,session_id:analyticsSessionId,cta_id:currentCta.id,cta_label:currentCta.label,section_label:currentCta.section,step:data.step??null,qualification:data.qualification||'',compatible_count:data.compatibleCount??null,data};
+    try { fetch('/api/analytics',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload),keepalive:true}).catch(()=>{}); } catch {}
+  }
+  function setCtaContext(button,index){
+    const labels=['Header','Hero','Manifiesto','Territorio','Proyecto','Master Plan','Video','Inversión','Club Stella','Club de playa','Evolución histórica','Preguntas frecuentes','CTA final'];
+    const label=labels[index]||'CTA';
+    const id=label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+    button.dataset.analyticsCta=id;button.dataset.analyticsLabel=label;button.dataset.analyticsSection=label;
+  }
+  $$('.js-qualify').forEach((button,index)=>{
+    setCtaContext(button,index);
+    button.addEventListener('click',()=>{
+      currentCta={id:button.dataset.analyticsCta,label:button.dataset.analyticsLabel,section:button.dataset.analyticsSection};
+      track('cta_click');
+      track('form_start');
+    });
+  });
+
   // Scroll reveal
   const observer = new IntersectionObserver(entries => {
     entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('is-visible'); });
@@ -35,8 +60,14 @@
   const altForm = $('#altForm');
   const alternativeForm = $('#alternativeForm');
   const altStatus = $('#altStatus');
+  bookingBtn?.addEventListener('click', e => {
+    formCompleted = true;
+    track('booking_click',{qualification:'compatible',compatibleCount:Object.keys(compatible).reduce((n,k)=>n+(compatible[k].has(answers[k])?1:0),0),answers:{...answers}});
+  });
 
   let step = 1;
+  let formCompleted = false;
+  let abandonmentSent = false;
   const answers = {};
   const progressValues = [0,38,58,78,92,100];
   const compatible = {
@@ -68,12 +99,19 @@
     updateProgress();
   }
   function open() {
+    formCompleted = false;
+    abandonmentSent = false;
     reset();
     modal.classList.add('open');
     modal.setAttribute('aria-hidden','false');
     document.body.style.overflow = 'hidden';
   }
   function close() {
+    if(modal.classList.contains('open')) {
+      if(form.hidden) track('result_exit',{step:6,reason:'user_close_result',answers:{...answers}});
+      else track('modal_close',{step,reason:'user_close',answers:{...answers}});
+      abandonmentSent = true;
+    }
     modal.classList.remove('open');
     modal.setAttribute('aria-hidden','true');
     document.body.style.overflow = '';
@@ -81,6 +119,12 @@
   $$('.js-qualify').forEach(b => b.addEventListener('click', open));
   closeEls.forEach(el => el.addEventListener('click', close));
   document.addEventListener('keydown', e => { if(e.key==='Escape' && modal.classList.contains('open')) close(); });
+  window.addEventListener('pagehide', () => {
+    if(modal.classList.contains('open') && !formCompleted && !abandonmentSent && !form.hidden) {
+      track('form_abandon',{step,reason:'page_exit',answers:{...answers}});
+      abandonmentSent = true;
+    }
+  });
 
   function go(to) {
     steps.forEach(s => s.classList.toggle('active', Number(s.dataset.step) === to));
@@ -121,6 +165,7 @@
   async function showResult(){
     const compatibleCount = Object.keys(compatible).reduce((n,k)=>n+(compatible[k].has(answers[k])?1:0),0);
     const qualified = compatibleCount >= 2;
+    track('result_view',{qualification:qualified?'compatible':'alternative',compatibleCount,answers:{...answers}});
     const priority = qualified && compatible.q1.has(answers.q1) && compatible.q4.has(answers.q4);
     form.hidden = true;
     steps.forEach(s=>s.classList.remove('active'));
@@ -154,7 +199,7 @@
   nextBtn.addEventListener('click', () => {
     const val = chosen(`q${step}`);
     if(!val){status.textContent='Selecciona una opción para continuar.';return;}
-    status.textContent=''; answers[`q${step}`]=val;
+    status.textContent=''; answers[`q${step}`]=val; track('question_answer',{step,value:val});
     if(step<5) go(step+1); else showResult();
   });
   backBtn.addEventListener('click', () => { if(step>1) go(step-1); });
@@ -176,6 +221,7 @@
       budget: String(fd.get('budget') || '').trim(),
       interest: String(fd.get('interest') || '').trim()
     });
+    formCompleted = true;
     altStatus.textContent='Listo. Guardamos tus datos y te avisaremos cuando encontremos un proyecto que encaje mejor contigo.';
   });
   updateProgress();
