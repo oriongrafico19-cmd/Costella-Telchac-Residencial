@@ -74,7 +74,15 @@ async function analyticsReport(env){
   }
   const cta=[...ctaMap.values()].map(x=>({cta_id:x.cta_id,label:x.label,section:x.section,clicks:x.clicks,sessions:x.sessions.size,form_starts:x.formStarts.size,qualified:x.qualified.size,bookings:x.bookings.size,booking_rate:x.sessions.size?Math.round(x.bookings.size/x.sessions.size*1000)/10:0})).sort((a,b)=>b.bookings-a.bookings||b.clicks-a.clicks);
   const abandonment=[...abandonByCta.values()].sort((a,b)=>b.abandons-a.abandons);
-  return {ok:true,period_days:90,summary:{sessions,cta_clicks:count('cta_click'),form_starts:count('form_start'),results:resultEvents.length,qualified:resultEvents.filter(x=>x.qualification==='compatible').length,alternative:resultEvents.filter(x=>x.qualification==='alternative').length,booking_clicks:bookingEvents.length,alternative_submits:count('alternative_submit'),abandonments:abandonEvents.length,result_exits:resultExits.length},cta,booking_answers:q,abandonment_by_step:abandonByStep,abandonment_by_cta:abandonment};
+  const depthEvents=results.filter(x=>x.event_type==='page_depth');
+  const depthMap=new Map();
+  for(const e of depthEvents){const d=parse(e);const k=Number(d.depth||0);if(!k)continue; if(!depthMap.has(k))depthMap.set(k,{depth:k,section_id:d.section_id||e.section_id||'',section_label:d.section_label||e.section_label||'—',visitors:new Set()});depthMap.get(k).visitors.add(e.session_id);}
+  const pageExitEvents=results.filter(x=>x.event_type==='page_exit');
+  const exitMap=new Map();
+  for(const e of pageExitEvents){const d=parse(e);const k=Number(d.depth||0);if(!exitMap.has(k))exitMap.set(k,{depth:k,section_id:d.section_id||e.section_id||'',section_label:d.section_label||e.section_label||'—',exits:0,sessions:new Set()});exitMap.get(k).exits++;exitMap.get(k).sessions.add(e.session_id);}
+  const depth=[...depthMap.values()].map(x=>({depth:x.depth,section_id:x.section_id,section_label:x.section_label,visitors:x.visitors.size})).sort((a,b)=>a.depth-b.depth);
+  const exits_by_depth=[...exitMap.values()].map(x=>({depth:x.depth,section_id:x.section_id,section_label:x.section_label,exits:x.exits,sessions:x.sessions.size})).sort((a,b)=>a.depth-b.depth);
+  return {ok:true,period_days:90,summary:{sessions,cta_clicks:count('cta_click'),form_starts:count('form_start'),results:resultEvents.length,qualified:resultEvents.filter(x=>x.qualification==='compatible').length,alternative:resultEvents.filter(x=>x.qualification==='alternative').length,booking_clicks:bookingEvents.length,alternative_submits:count('alternative_submit'),page_exits:pageExitEvents.length,abandonments:abandonEvents.length,result_exits:resultExits.length},cta,booking_answers:q,abandonment_by_step:abandonByStep,abandonment_by_cta:abandonment,depth,exits_by_depth};
 }
 
 async function api(request,env){

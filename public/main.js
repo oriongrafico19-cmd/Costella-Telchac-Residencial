@@ -8,6 +8,9 @@
     try { let id=localStorage.getItem('costella_analytics_session'); if(!id){id=(crypto.randomUUID?crypto.randomUUID():Date.now()+'-'+Math.random().toString(36).slice(2));localStorage.setItem('costella_analytics_session',id);} return id; } catch { return 'session-'+Date.now()+'-'+Math.random().toString(36).slice(2); }
   }
   const analyticsSessionId = getSessionId();
+  let maxDepth = 0;
+  let maxSection = {id:'top', label:'Hero'};
+  let pageExitSent = false;
   let currentCta = {id:'unknown',label:'Desconocido',section:'—'};
   function track(eventType, data={}){
     const payload={event_type:eventType,session_id:analyticsSessionId,cta_id:currentCta.id,cta_label:currentCta.label,section_label:currentCta.section,step:data.step??null,qualification:data.qualification||'',compatible_count:data.compatibleCount??null,data};
@@ -33,6 +36,37 @@
     entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('is-visible'); });
   }, {threshold:.12});
   $$('.reveal').forEach(el => observer.observe(el));
+
+  // Anonymous landing-depth analytics: records only the deepest section reached.
+  const depthSections = [
+    {id:'top', label:'Hero', depth:10},
+    {id:'territorio', label:'Territorio', depth:25},
+    {id:'proyecto', label:'Proyecto', depth:40},
+    {id:'master', label:'Master Plan', depth:52},
+    {id:'inversion', label:'Inversión', depth:65},
+    {id:'experiencia', label:'Amenidades / Club Stella', depth:78},
+    {id:'preguntas', label:'Preguntas frecuentes', depth:90}
+  ];
+  function trackDepth(section){
+    if (!section || section.depth <= maxDepth) return;
+    maxDepth = section.depth; maxSection = section;
+    track('page_depth',{depth:section.depth,section_id:section.id,section_label:section.label});
+  }
+  const depthObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const section = depthSections.find(x => x.id === entry.target.id);
+      if (section) trackDepth(section);
+    });
+  }, {threshold:0.15});
+  depthSections.forEach(x => { const el=document.getElementById(x.id); if(el) depthObserver.observe(el); });
+  trackDepth(depthSections[0]);
+  function sendPageExit(reason='pagehide'){
+    if(pageExitSent) return; pageExitSent=true;
+    const payload={event_type:'page_exit',session_id:analyticsSessionId,cta_id:currentCta.id,cta_label:currentCta.label,section_id:maxSection.id,section_label:maxSection.label,step:null,qualification:'',compatible_count:null,data:{depth:maxDepth,section_id:maxSection.id,section_label:maxSection.label,reason}};
+    try { const blob=new Blob([JSON.stringify(payload)],{type:'application/json'}); if(navigator.sendBeacon) navigator.sendBeacon('/api/analytics',blob); else fetch('/api/analytics',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(payload),keepalive:true}).catch(()=>{}); } catch {}
+  }
+  window.addEventListener('pagehide',()=>sendPageExit('pagehide'));
 
   // Mobile menu
   const toggle = $('.menu-toggle');
